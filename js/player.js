@@ -249,7 +249,8 @@ function initializePageContent() {
     }, 1000);
 
     // 添加键盘快捷键事件监听
-    document.addEventListener('keydown', handleKeyboardShortcuts);
+    // document.addEventListener('keydown', handleKeyboardShortcuts);
+    handleKeyboardShortcuts();
 
     // 添加页面离开事件监听，保存播放位置
     window.addEventListener('beforeunload', saveCurrentProgress);
@@ -283,80 +284,122 @@ function initializePageContent() {
 
 // 处理键盘快捷键
 function handleKeyboardShortcuts(e) {
-    // 忽略输入框中的按键事件
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-    // Alt + 左箭头 = 上一集
-    if (e.altKey && e.key === 'ArrowLeft') {
-        if (currentEpisodeIndex > 0) {
-            playPreviousEpisode();
-            showShortcutHint('上一集', 'left');
-            e.preventDefault();
-        }
-    }
+    // 右键使用的一些变量，实现长按三倍速功能
+    // 是不是已经是三倍速
+    let isTripleSpeed = false;
+    let holdtimer;
 
-    // Alt + 右箭头 = 下一集
-    if (e.altKey && e.key === 'ArrowRight') {
-        if (currentEpisodeIndex < currentEpisodes.length - 1) {
-            playNextEpisode();
-            showShortcutHint('下一集', 'right');
-            e.preventDefault();
-        }
-    }
 
-    // 左箭头 = 快退
-    if (!e.altKey && e.key === 'ArrowLeft') {
+    // 快捷键列表
+    const keyboardList = [
+        { name: "上一集", key: "mod+left", action: playPreviousEpisode },
+        { name: "下一集", key: "mod+right", action: playNextEpisode },
+        { name: "快退", key: "left", action: rewind },
+        { name: "快进", key: "right", action: fastForward, type: "keyup" },
+        { name: "音量+", key: "up", action: volumeUp },
+        { name: "音量-", key: "down", action: volumeDown },
+        { name: "播放/暂停", key: "space", action: togglePlay },
+        { name: "全屏", key: ["f", "h", "enter"], action: toggleFullScreen },
+        { name: "页面全屏", key: "y", action: togglePageFullScreen },
+        { name: "隐藏控制栏", key: "j", action: hideControls },
+        { name: "三倍速", key: "right", action: tripleSpeed, type: "keydown" },
+        { name: "退出", key: "esc", action: exit }
+    ]
+
+    keyboardList.forEach(({ name, key, action, type }) => {
+        Mousetrap.bind(key, () => {
+            action();
+            return false;
+        }, type);
+    });
+
+    // 快退
+    function rewind() {
         if (art && art.currentTime > 5) {
             art.currentTime -= 5;
-            showShortcutHint('快退', 'left');
-            e.preventDefault();
         }
     }
 
-    // 右箭头 = 快进
-    if (!e.altKey && e.key === 'ArrowRight') {
+    // 快进
+    function fastForward() {
         if (art && art.currentTime < art.duration - 5) {
-            art.currentTime += 5;
-            showShortcutHint('快进', 'right');
-            e.preventDefault();
+            holdtimer && clearTimeout(holdtimer)
+            holdtimer = undefined
+            // 如果是三倍速时不快进，改为1倍速
+            if (isTripleSpeed) {
+                art.playbackRate = 1
+                isTripleSpeed = false
+            } else {
+                art.currentTime += 5;
+            }
         }
     }
 
-    // 上箭头 = 音量+
-    if (e.key === 'ArrowUp') {
+    // 音量+
+    function volumeUp() {
         if (art && art.volume < 1) {
             art.volume += 0.1;
-            showShortcutHint('音量+', 'up');
-            e.preventDefault();
         }
     }
 
-    // 下箭头 = 音量-
-    if (e.key === 'ArrowDown') {
+    // 音量-
+    function volumeDown() {
         if (art && art.volume > 0) {
             art.volume -= 0.1;
-            showShortcutHint('音量-', 'down');
-            e.preventDefault();
         }
     }
 
-    // 空格 = 播放/暂停
-    if (e.key === ' ') {
+    // 播放/暂停
+    function togglePlay() {
         if (art) {
             art.toggle();
-            showShortcutHint('播放/暂停', 'play');
-            e.preventDefault();
         }
     }
 
-    // f 键 = 切换全屏
-    if (e.key === 'f' || e.key === 'F') {
+    // 全屏
+    function toggleFullScreen() {
         if (art) {
             art.fullscreen = !art.fullscreen;
-            showShortcutHint('切换全屏', 'fullscreen');
-            e.preventDefault();
         }
     }
+
+    // 页面全屏
+    function togglePageFullScreen() {
+        if (art) {
+            art.fullscreenWeb = !art.fullscreenWeb;
+        }
+    }
+
+    // 三倍速
+    function tripleSpeed() {
+        if (holdtimer) return;
+        holdtimer = setTimeout(() => {
+            if (art && !isTripleSpeed) {
+                art.playbackRate = 3;
+                isTripleSpeed = true;
+            }
+        }, 500)
+    }
+
+    // 隐藏控制栏
+    function hideControls() {
+        if (art && art.controls) {
+            art.controls.show = !art.controls.show;
+        }
+    }
+
+    // 退出
+    function exit() {
+        if (!art) return;
+        if (art.fullscreenWeb) {
+            art.fullscreenWeb = false;
+        }
+        if (art.fullscreen) {
+            art.fullscreen = false;
+        }
+    }
+
 }
 
 // 显示快捷键提示
@@ -658,7 +701,7 @@ function initPlayer(videoUrl) {
             }
         }
 
-        
+
     }
     // 处理鼠标返回浏览器窗口
     function handleMouseEnter() {
@@ -898,7 +941,7 @@ function showEpisodesByControls(isShow) {
             index: 1,
             html: renderEpisodesByController()
         })
-    }else{
+    } else {
         art.controls.update({
             name: 'select-episode',
             index: 1,
