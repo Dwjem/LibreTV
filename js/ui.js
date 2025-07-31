@@ -237,7 +237,7 @@ function renderSearchHistory() {
         const deleteButton = document.createElement('span');
         deleteButton.className = 'pl-1 text-gray-500 hover:text-red-500 transition-colors';
         deleteButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-        deleteButton.onclick = function(e) {
+        deleteButton.onclick = function (e) {
             // 阻止事件冒泡，避免触发搜索
             e.stopPropagation();
             // 删除对应历史记录
@@ -253,7 +253,7 @@ function renderSearchHistory() {
             tag.title = `搜索于: ${date.toLocaleString()}`;
         }
 
-        tag.onclick = function() {
+        tag.onclick = function () {
             document.getElementById('searchInput').value = item.text;
             search();
         };
@@ -646,7 +646,7 @@ async function playFromHistory(url, title, episodeIndex, playbackPosition = 0) {
                 if (idForUrl) playerUrl += `&id=${encodeURIComponent(idForUrl)}`;
             }
         } else {
-             // This case should ideally not happen if 'url' is always a player.html link from history
+            // This case should ideally not happen if 'url' is always a player.html link from history
             // console.warn("Playing from history with a non-player.html URL structure. This might be an issue.");
             const playUrl = new URL(url, window.location.origin);
             if (!playUrl.searchParams.has('index') && episodeIndex > 0) {
@@ -660,12 +660,18 @@ async function playFromHistory(url, title, episodeIndex, playbackPosition = 0) {
             playerUrl = playUrl.toString();
         }
 
-        showVideoPlayer(playerUrl);
+        // showVideoPlayer(playerUrl);
+        goPage(playerUrl);
     } catch (e) {
         // console.error('从历史记录播放失败:', e);
         const simpleUrl = `player.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&index=${episodeIndex}`;
-        showVideoPlayer(simpleUrl);
+        // showVideoPlayer(simpleUrl);
+        goPage(simpleUrl);
     }
+}
+
+function goPage(url) {
+    window.location.href = url;
 }
 
 // 添加观看历史 - 确保每个视频标题只有一条记录
@@ -769,7 +775,7 @@ function clearViewingHistory() {
 
 // 更新toggleSettings函数以处理历史面板互动
 const originalToggleSettings = toggleSettings;
-toggleSettings = function(e) {
+toggleSettings = function (e) {
     if (e) e.stopPropagation();
 
     // 原始设置面板切换逻辑
@@ -783,8 +789,8 @@ toggleSettings = function(e) {
 };
 
 // 点击外部关闭历史面板
-document.addEventListener('DOMContentLoaded', function() {
-    document.addEventListener('click', function(e) {
+document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('click', function (e) {
         const historyPanel = document.getElementById('historyPanel');
         const historyButton = document.querySelector('button[onclick="toggleHistory(event)"]');
 
